@@ -1,8 +1,14 @@
 import UserService from "../services/UserService.js"
 import FriendService from "../services/FriendService.js"
 import User from "../models/UserModel";
+
 const userService = new UserService();
 const friendService = new FriendService();
+
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const jwtExpirySeconds = 84500;
+const jwtKey = process.env.JWT_KEY || 'mySecretKey';
 
 
 class UserController {
@@ -15,12 +21,16 @@ class UserController {
         this.login = this.login.bind(this);
 
         this.addFriend = this.addFriend.bind(this);
+        this.getFriend = this.getFriend.bind(this);
+
+        this.addDebt = this.addDebt.bind(this);
+        this.getDebt = this.getDebt.bind(this);
     }
 
     /*
      Creation de compte et login user
      */
-    async login(req, res){
+    async login(req, res) {
         let response = await this.userService.login(req.body);
         if (response.error) return res.status(response.statusCode).send(response);
         return res.status(201).send(response);
@@ -36,32 +46,67 @@ class UserController {
     Friend Part
      */
 
-    async addFriend(req, res){
+    async addFriend(req, res) {
         let token = req.headers['x-access-token'] || req.headers['authorization'];
         let username;
-        console.log("token : ", token);
-        if(token) username = await this.isAuthenticate(token);
+        if (token) username = await this.isAuthenticate(token);
         // If not authenticatesend error 401
-        if(!token || !username) res.status(401).send({error: "Bad credentials", statusCode: 401});
+        if (!token || !username) res.status(401).send({error: "Bad credentials", statusCode: 401});
 
         //TODO gestion erreur parametre d'entrés
 
-        let response = await this.friendService.addFriend(req.body);
+        let response = await this.friendService.addFriend(username, req.body.name);
         if (response.error) return res.status(response.statusCode).send(response);
         return res.status(201).send(response);
     }
 
-    async isUsernameAvailable(req, res) {
+    async getFriend(req, res){
+        let token = req.headers['x-access-token'] || req.headers['authorization'];
+        let username;
+        if (token) username = await this.isAuthenticate(token);
+        // If not authenticatesend error 401
+        if (!token || !username) res.status(401).send({error: "Bad credentials", statusCode: 401});
 
-        const username = req.query.username;
-        if(username) {
-            let response = await this.userService.isUsernameAvailable(username);
-            if (response.error) return res.status(response.statusCode).send(response);
-            return res.status(201).send(response);
-        }else return res.status(500).send("no username");
 
+        let response = await this.friendService.getFriends(username);
+        if (response.error) return res.status(response.statusCode).send(response);
+        return res.status(201).send(response);
     }
 
+    async addDebt(req, res){
+        let token = req.headers['x-access-token'] || req.headers['authorization'];
+        let username;
+        if (token) username = await this.isAuthenticate(token);
+        let idFriend = req.body.idFriend;
+        let value = req.body.value;
+        // If not authenticatesend error 401
+        if (!token || !username) res.status(401).send({error: "Bad credentials", statusCode: 401});
+        // If body isn't correct send error
+        if(!idFriend || !value) res.status(402).send({error: "Wrong body", statusCode: 402});
+        console.log("idfriend : ", idFriend);
+        console.log("value : ", value);
+
+        let response = await this.friendService.addDebt(idFriend, value);
+        if (response.error) return res.status(response.statusCode).send(response);
+        return res.status(201).send(response);
+    }
+
+    async getDebt(req, res){
+        let token = req.headers['x-access-token'] || req.headers['authorization'];
+        let username;
+        if (token) username = await this.isAuthenticate(token);
+        let idFriend = req.body.idFriend;
+        let value = req.body.value;
+        // If not authenticatesend error 401
+        if (!token || !username) res.status(401).send({error: "Bad credentials", statusCode: 401});
+        // If body isn't correct send error
+        if(!idFriend) res.status(402).send({error: "Wrong body", statusCode: 402});
+        console.log("idfriend : ", idFriend);
+
+        let response = await this.friendService.getDebt(idFriend);
+        if (response.error) return res.status(response.statusCode).send(response);
+        return res.status(201).send(response);
+    }
 
     async isAuthenticate(token) {
 
@@ -78,11 +123,10 @@ class UserController {
         }
 
         // verify token
-        try{
+        try {
             let decoded = jwt.verify(token, jwtKey);
             return user = decoded.username;
-        }
-        catch(err) {
+        } catch (err) {
             return user = null;
         }
     }

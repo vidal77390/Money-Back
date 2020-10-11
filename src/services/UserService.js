@@ -8,7 +8,7 @@ const jwtKey = process.env.JWT_KEY || 'mySecretKey';
 class UserService {
 
     constructor() {
-        this.model = new User().getInstance();
+        this.userModel = User;
 
         this.createAccount = this.createAccount.bind(this);
         this.login = this.login.bind(this);
@@ -17,7 +17,7 @@ class UserService {
 
     async login(credentials) {
 
-        let user = await this.model.findOne({username: credentials.username});
+        let user = await this.userModel.findOne({username: credentials.username});
 
         try {
 
@@ -100,7 +100,7 @@ class UserService {
         user.password = bcrypt.hashSync(user.password, 8);
 
         try {
-            let item = await this.model.create(user);
+            let item = await this.userModel.create(user);
             let username = user.username;
 
             const token = jwt.sign({username}, jwtKey, {

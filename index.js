@@ -1,9 +1,7 @@
-/** 
- * File that Node will start to start our API and where we launch our server
- */
-require('dotenv').config();
-import './config/database';
+
 import server from './config/server';
+import './config/database.js';
+
 
 const PORT = process.env.PORT || 3000;
 

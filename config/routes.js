@@ -15,7 +15,10 @@ export default (app) => {
     app.post('/user', userController.createAccount)
         .post('/user/login', userController.login);
 
-    app.post('/friend', userController.addFriend);
+    app.post('/friend', userController.addFriend)
+        .get('/friends', userController.getFriend)
+        .post('/friend/addDebt', userController.addDebt)
+        .get('/friend/debt', userController.getDebt);
 
 
 }
